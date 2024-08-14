@@ -4,9 +4,21 @@ const User = require("../models/User");
 const config = require("../config/config");
 
 exports.register = async ({ username, email, password }) => {
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ username, email, password: hashedPassword });
-  return user;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
+    return user;
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      throw new Error("Username or email already exists");
+    } else {
+      throw new Error("An error occurred during registration");
+    }
+  }
 };
 
 exports.login = async ({ email, password }) => {

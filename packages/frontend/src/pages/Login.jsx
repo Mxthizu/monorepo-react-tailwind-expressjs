@@ -10,7 +10,6 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    // Supposons que tu envoies une requête pour te connecter à ton API ici.
     const response = await fetch(`${backendUrl}/api/auth/login`, {
       method: "POST",
       headers: {
@@ -24,7 +23,6 @@ const Login = () => {
       localStorage.setItem("token", data.token);
       navigate("/dashboard"); // Redirige vers le tableau de bord ou une autre page
     } else {
-      // Gérer les erreurs ici
       alert("Invalid credentials");
     }
   };

@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Label, TextInput, Button, Card } from "flowbite-react";
+import { Label, TextInput, Button, Card, Toast } from "flowbite-react";
 import { Link, useNavigate } from "react-router-dom";
+import { HiCheck, HiExclamationCircle } from "react-icons/hi"; // Importer les icônes
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success"); // "success" ou "error"
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
@@ -21,10 +25,16 @@ const Register = () => {
     });
 
     if (response.ok) {
-      navigate("/login"); // Redirige vers la page de connexion après l'inscription
+      setToastMessage("Registration successful!");
+      setToastType("success");
+      setShowToast(true);
+      setTimeout(() => {
+        navigate("/login"); // Redirige vers la page de connexion après l'inscription
+      }, 2000);
     } else {
-      // Gérer les erreurs ici
-      alert("Failed to register");
+      setToastMessage("Failed to register. Please try again.");
+      setToastType("error");
+      setShowToast(true);
     }
   };
 
@@ -48,7 +58,7 @@ const Register = () => {
             <TextInput
               id="email"
               type="email"
-              placeholder="name@company.com"
+              placeholder="john.doe@gmail.com"
               required={true}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -76,6 +86,36 @@ const Register = () => {
           </p>
         </form>
       </Card>
+
+      {/* Toast */}
+      {showToast && (
+        <div className="fixed bottom-4 right-4">
+          <Toast>
+            <div
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                toastType === "success"
+                  ? "bg-green-100 text-green-500 dark:bg-green-800 dark:text-green-200"
+                  : "bg-red-100 text-red-500 dark:bg-red-800 dark:text-red-200"
+              }`}
+            >
+              {toastType === "success" ? (
+                <HiCheck className="h-5 w-5" />
+              ) : (
+                <HiExclamationCircle className="h-5 w-5" />
+              )}
+            </div>
+            <div className="ml-3 text-sm font-normal">{toastMessage}</div>
+            <Button
+              size="xs"
+              color="transparent"
+              onClick={() => setShowToast(false)}
+              aria-label="Close"
+            >
+              <HiExclamationCircle className="h-5 w-5" />
+            </Button>
+          </Toast>
+        </div>
+      )}
     </div>
   );
 };

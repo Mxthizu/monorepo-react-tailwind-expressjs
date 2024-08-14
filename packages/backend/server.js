@@ -20,13 +20,11 @@ app.use("/api", routes);
 app.use(errorHandler);
 
 sequelize
-  .sync({ force: false }) // Utilise { force: true } pour recréer les tables à chaque démarrage (attention, cela supprime les données existantes)
+  .sync({ alter: true })
   .then(() => {
-    console.log("Database & tables created!");
+    console.log("Database & tables synced!");
   })
-  .catch((err) => {
-    console.error("Unable to sync the database:", err);
-  });
+  .catch((err) => console.error("Failed to sync database:", err));
 
 app.listen(config.port, () => {
   console.log(`Server running on port ${config.port}`);
