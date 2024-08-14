@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const deleteAccountNotification = require("../emailTemplates/deleteAccountNotification");
 
 exports.updateUser = async (req, res) => {
   const { id, firstName, lastName, password } = req.body;
@@ -36,6 +37,11 @@ exports.deleteUser = async (req, res) => {
     }
 
     await user.destroy();
+
+    // Utiliser le modèle de notification de suppression de compte
+    const { subject, text, html } = deleteAccountNotification(user.username);
+    await emailService.sendEmail(user.email, subject, text, html);
+
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
     res

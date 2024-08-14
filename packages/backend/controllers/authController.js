@@ -1,10 +1,18 @@
 const bcrypt = require("bcrypt");
-const User = require("../models/User"); // Assurez-vous que le chemin est correct
+const User = require("../models/User");
 const authService = require("../services/authService");
+const emailService = require("../services/emailService");
+const welcomeEmail = require("../emailTemplates/welcomeEmail");
+const loginNotification = require("../emailTemplates/loginNotification");
 
 exports.register = async (req, res) => {
   try {
     const user = await authService.register(req.body);
+
+    // Utiliser le modèle d'email de bienvenue
+    const { subject, text, html } = welcomeEmail(user.username);
+    await emailService.sendEmail(user.email, subject, text, html);
+
     res.status(201).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -14,6 +22,15 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const token = await authService.login(req.body);
+
+    // Utiliser le modèle de notification de connexion
+    const user = await User.findOne({ where: { email: req.body.email } });
+    const ipAddress = req.headers["x-forwarded-for"] || req.ip; // Récupère l'adresse IP
+
+    // Utiliser le modèle de notification de connexion
+    const { subject, text, html } = loginNotification(user.username, ipAddress);
+    await emailService.sendEmail(user.email, subject, text, html);
+
     res.json({ token });
   } catch (error) {
     res.status(400).json({ error: error.message });
