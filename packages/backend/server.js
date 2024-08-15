@@ -19,13 +19,6 @@ app.use("/api", routes);
 // Use the error handler
 app.use(errorHandler);
 
-sequelize
-  .sync({ alter: true })
-  .then(() => {
-    console.log("Database & tables synced!");
-  })
-  .catch((err) => console.error("Failed to sync database:", err));
-
 app.listen(config.port, () => {
   console.log(`Server running on port ${config.port}`);
 });

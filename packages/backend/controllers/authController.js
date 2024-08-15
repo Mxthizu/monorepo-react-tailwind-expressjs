@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
+const config = require("../config/config");
 const User = require("../models/User");
+const { Op } = require("sequelize");
 const authService = require("../services/authService");
 const emailService = require("../services/emailService");
 const welcomeEmail = require("../emailTemplates/welcomeEmail");
@@ -57,5 +59,73 @@ exports.validatePassword = async (req, res) => {
     res
       .status(500)
       .json({ error: "An error occurred during password validation" });
+  }
+};
+
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const resetToken = await authService.generatePasswordResetToken(user);
+    const resetLink = `${config.frontendUrl}/reset-password/${resetToken}`;
+    await emailService.sendEmail(
+      user.email,
+      "Password Reset",
+      `Hello ${user.username},\n\nPlease reset your password by clicking the link: ${resetLink}\n\nIf you did not request a password reset, please ignore this email.`,
+      `<p>Hello <strong>${user.username}</strong>,</p><p>Please reset your password by clicking the link: <a href="${resetLink}">Reset Password</a></p><p>If you did not request a password reset, please ignore this email.</p>`,
+    );
+
+    res.status(200).json({ message: "Password reset email sent" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while requesting password reset" });
+  }
+};
+
+// Fonction pour réinitialiser le mot de passe
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: {
+          [Op.ne]: null,
+        },
+        resetPasswordExpires: {
+          [Op.gt]: Date.now(),
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+
+    const isTokenValid = await bcrypt.compare(token, user.resetPasswordToken);
+
+    if (!isTokenValid) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.log("Error resetting password:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while resetting the password" });
   }
 };

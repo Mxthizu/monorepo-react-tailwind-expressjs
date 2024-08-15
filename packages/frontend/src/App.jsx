@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import ResetPassword from "./pages/ResetPassword";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -12,6 +13,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          {/* Ajouter la route */}
           <Route
             path="/dashboard"
             element={

@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const config = require("../config/config");
@@ -32,4 +33,24 @@ exports.login = async ({ email, password }) => {
     expiresIn: "1h",
   });
   return token;
+};
+
+exports.generatePasswordResetToken = async (user) => {
+  try {
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 heure
+    await user.save();
+
+    return resetToken;
+  } catch (error) {
+    console.error(
+      "Erreur lors de la génération du token de réinitialisation :",
+      error,
+    );
+    throw error; // Pour relancer l'erreur et permettre à l'appelant de la gérer
+  }
 };
