@@ -3,15 +3,23 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const config = require("../config/config");
+const emailService = require("../services/emailService");
 
 exports.register = async ({ username, email, password }) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+    const emailConfirmationToken = crypto.randomBytes(32).toString("hex");
+
     const user = await User.create({
       username,
       email,
       password: hashedPassword,
+      emailConfirmationToken,
     });
+
+    // Envoyer l'email de confirmation
+    await this.sendEmailConfirmation(user);
+
     return user;
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
@@ -24,7 +32,12 @@ exports.register = async ({ username, email, password }) => {
 
 exports.login = async ({ email, password }) => {
   const user = await User.findOne({ where: { email } });
+
   if (!user) throw new Error("User not found");
+
+  if (!user.isEmailConfirmed) {
+    throw new Error("Please confirm your email before logging in");
+  }
 
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) throw new Error("Invalid password");
@@ -53,4 +66,18 @@ exports.generatePasswordResetToken = async (user) => {
     );
     throw error; // Pour relancer l'erreur et permettre à l'appelant de la gérer
   }
+};
+
+exports.sendEmailConfirmation = async (user) => {
+  const emailConfirmationToken = crypto.randomBytes(32).toString("hex");
+  user.emailConfirmationToken = emailConfirmationToken;
+  await user.save();
+
+  const confirmationLink = `${config.frontendUrl}/confirm-email/${emailConfirmationToken}`;
+  await emailService.sendEmail(
+    user.email,
+    "Confirm your email",
+    `Hello ${user.username},\n\nPlease confirm your email by clicking the link: ${confirmationLink}\n\nIf you did not register, please ignore this email.`,
+    `<p>Hello <strong>${user.username}</strong>,</p><p>Please confirm your email by clicking the link: <a href="${confirmationLink}">Confirm Email</a></p><p>If you did not register, please ignore this email.</p>`,
+  );
 };

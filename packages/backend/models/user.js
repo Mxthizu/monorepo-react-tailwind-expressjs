@@ -27,6 +27,14 @@ const User = sequelize.define("User", {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  isEmailConfirmed: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false, // Par défaut, l'email n'est pas confirmé
+  },
+  emailConfirmationToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 });
 
 module.exports = User;

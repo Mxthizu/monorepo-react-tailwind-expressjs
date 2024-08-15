@@ -11,10 +11,6 @@ exports.register = async (req, res) => {
   try {
     const user = await authService.register(req.body);
 
-    // Utiliser le modèle d'email de bienvenue
-    const { subject, text, html } = welcomeEmail(user.username);
-    await emailService.sendEmail(user.email, subject, text, html);
-
     res.status(201).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -27,9 +23,8 @@ exports.login = async (req, res) => {
 
     // Utiliser le modèle de notification de connexion
     const user = await User.findOne({ where: { email: req.body.email } });
-    const ipAddress = req.headers["x-forwarded-for"] || req.ip; // Récupère l'adresse IP
+    const ipAddress = req.headers["x-forwarded-for"] || req.ip;
 
-    // Utiliser le modèle de notification de connexion
     const { subject, text, html } = loginNotification(user.username, ipAddress);
     await emailService.sendEmail(user.email, subject, text, html);
 
@@ -123,9 +118,59 @@ exports.resetPassword = async (req, res) => {
 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
-    console.log("Error resetting password:", error);
     res
       .status(500)
       .json({ error: "An error occurred while resetting the password" });
+  }
+};
+
+exports.confirmEmail = async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const user = await User.findOne({
+      where: { emailConfirmationToken: token },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid token" });
+    }
+
+    if (user.isEmailConfirmed) {
+      return res.status(200).json({ message: "Email is already confirmed" });
+    }
+
+    user.isEmailConfirmed = true;
+    user.emailConfirmationToken = null; // On supprime le token de confirmation
+    await user.save();
+
+    res.status(200).json({ message: "Email confirmed successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "An error occurred while confirming email" });
+  }
+};
+
+exports.resendConfirmationEmail = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isEmailConfirmed) {
+      return res.status(400).json({ error: "Email is already confirmed" });
+    }
+
+    // Utiliser le service pour envoyer l'email de confirmation
+    await authService.sendEmailConfirmation(user);
+
+    res.status(200).json({ message: "Confirmation email resent" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while resending confirmation email" });
   }
 };

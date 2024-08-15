@@ -6,7 +6,6 @@ module.exports = {
   database: process.env.DB_NAME,
   host: process.env.DB_HOST,
   dialect: "mysql",
-  port: process.env.PORT,
   jwtSecret: process.env.JWT_SECRET,
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173", // L'URL de votre frontend
 };
